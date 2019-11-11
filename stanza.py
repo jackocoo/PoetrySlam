@@ -1,12 +1,12 @@
 
 
 from Phyme import Phyme
-import nltk
+from profanityfilter import ProfanityFilter
+
+#import nltk
 import random
 import os
 import sys
-
-#import en
 
 import nltk
 import ssl
@@ -33,44 +33,50 @@ def get_word_web(start_word):
 	ph = Phyme()
 	perfect_rhymes = ph.get_perfect_rhymes(start_word)
 
+	pf = ProfanityFilter()
 
 	#gets one syllable perfect rhymes
-	list_single_rhymes = perfect_rhymes[1];
+	if 1 in perfect_rhymes:
+		list_single_rhymes = perfect_rhymes[1]
+	else:
+		list_single_rhymes = perfect_rhymes[2]
 	word_web = {}
 	antonyms = []
 
 	for word in list_single_rhymes:
-	
-		syns = wordnet.synsets(word)
-		associated_words = {}
-		associated_words["v"] = [] #verb
-		associated_words["n"] = [] #noun
-		associated_words["s"] = [] 
-		associated_words["a"] = [] #adjective
-		associated_words["r"] = []
-		associated_words["i"] = []
 
-		for l in syns:
-			arr = l.name().split(".")
-			results = associated_words[arr[1]]
-			results.append(l.lemmas()[0].name())
-			associated_words[arr[1]] = results
-			if len(l.hypernyms()) > 0:
-				for hyp in l.hypernyms():
-					arr = hyp.name().split(".")
-					results = associated_words[arr[1]]
-					results.append(hyp.lemmas()[0].name())
-					associated_words[arr[1]] = results
-			if len(l.hyponyms()) > 0:
-				for hyp in l.hyponyms():
-					arr = hyp.name().split(".")
-					results = associated_words[arr[1]]
-					results.append(hyp.lemmas()[0].name())
-					associated_words[arr[1]] = results
-			for syn in l.lemmas():
-				if syn.antonyms():
-					antonyms.append(syn.antonyms()[0].name())
-		word_web[word] = associated_words
+		if pf.is_clean(word):
+
+			syns = wordnet.synsets(word)
+			associated_words = {}
+			associated_words["v"] = [] #verb
+			associated_words["n"] = [] #noun
+			associated_words["s"] = [] 
+			associated_words["a"] = [] #adjective
+			associated_words["r"] = []
+			associated_words["i"] = []
+
+			for l in syns:
+				arr = l.name().split(".")
+				results = associated_words[arr[1]]
+				results.append(l.lemmas()[0].name())
+				associated_words[arr[1]] = results
+				if len(l.hypernyms()) > 0:
+					for hyp in l.hypernyms():
+						arr = hyp.name().split(".")
+						results = associated_words[arr[1]]
+						results.append(hyp.lemmas()[0].name())
+						associated_words[arr[1]] = results
+				if len(l.hyponyms()) > 0:
+					for hyp in l.hyponyms():
+						arr = hyp.name().split(".")
+						results = associated_words[arr[1]]
+						results.append(hyp.lemmas()[0].name())
+						associated_words[arr[1]] = results
+				for syn in l.lemmas():
+					if syn.antonyms():
+						antonyms.append(syn.antonyms()[0].name())
+			word_web[word] = associated_words
 	word_web["antonyms"] = antonyms
 	return word_web
 
@@ -177,10 +183,14 @@ def print_lines(web):
 	#done to ensure randomness of order
 	random.shuffle(keys)
 
+	count = 0
 	for key in keys:
 			string = make_new_line(web, key)
 			if len(string) > 0:
 				lines.append(string)
+				count += 1
+			if count > 11:
+				return lines
 	return lines
 
 
@@ -196,12 +206,13 @@ def find_best_antonym(ant_list, word):
 	original = wordnet.synsets(word)
 	original_syn = wordnet.synset(original[0].name()) #the word we have been given 
 	for ant in ant_list:
-		w1 = wordnet.synsets(ant)
-		antonym_to_compare = wordnet.synset(w1[0].name()) #the antonym we are comparing it to 
-		score = original_syn.wup_similarity(antonym_to_compare)
-		if score != None and score < best:
-			best = score
-			best_word = w1[0].name()
+		if ant != word:
+			w1 = wordnet.synsets(ant)
+			antonym_to_compare = wordnet.synset(w1[0].name()) #the antonym we are comparing it to 
+			score = original_syn.wup_similarity(antonym_to_compare)
+			if score != None and score < best:
+				best = score
+				best_word = w1[0].name()
 	return best_word.split(".")[0]
 
 
@@ -274,6 +285,8 @@ def make_poem(starting_word):
 	start_web = get_word_web(starting_word)
 	start_lines = print_lines(start_web)
 	antonym = find_best_antonym(start_web["antonyms"], starting_word)
+	if len(antonym) == 0:
+		antonym = "dark"
 
 	title = starting_word +  " vs. " + antonym
 	ant_web = get_word_web(antonym)
@@ -283,11 +296,15 @@ def make_poem(starting_word):
 
 	score = evaluate_poem(total_lines)
 
+	count = 0
 	while score < 50:
 		start_lines = print_lines(start_web)
 		ant_lines = print_lines(ant_web)
 		total_lines = synthesize_antonym_components(start_lines, ant_lines)
 		score = evaluate_poem(total_lines)
+		count += 1
+		if (count > 10):
+			score = 50
 
 	print("score is " + str(score))
 	total_lines.append(title)
@@ -307,13 +324,19 @@ def main():
 	title = poem[len(poem) - 1]
 	count = 0
 	print("			" + title + "\n")
+
+	full_string = ""
 	for line in poem:
 		if line == title:
 			break
 		print(line)
+		full_string += line + "." + "\n"
 		count += 1
 		if count % 4 == 0:
 			print()
+
+	full_string = "'" + full_string + "'"
+	#os.system("say " + full_string)
 
 
 main()
