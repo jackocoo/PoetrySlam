@@ -4,6 +4,7 @@ from Phyme import Phyme
 import nltk
 import random
 import os
+import sys
 
 #import en
 
@@ -22,7 +23,7 @@ from nltk.corpus import wordnet as wordnet
 
 """
 	This function takes a single word and returns a dictionary of dictionaries of "associated" words. 
-	The dictionary returned has keys which are synonyms of the starting word. Each key has a value which
+	The dictionary returned has keys which are perfect rhymes of the starting word. Each key has a value which
 	is a list of words which are hypernyms or hyponyms of the key. Additionally, the key "antonyms" 
 	refers to a list of antonyms to the starting word. 
 
@@ -30,9 +31,11 @@ from nltk.corpus import wordnet as wordnet
 def get_word_web(start_word):
 
 	ph = Phyme()
-	love_rhymes = ph.get_perfect_rhymes(start_word)
+	perfect_rhymes = ph.get_perfect_rhymes(start_word)
 
-	list_single_rhymes = love_rhymes[1];
+
+	#gets one syllable perfect rhymes
+	list_single_rhymes = perfect_rhymes[1];
 	word_web = {}
 	antonyms = []
 
@@ -272,14 +275,13 @@ def make_poem(starting_word):
 	start_lines = print_lines(start_web)
 	antonym = find_best_antonym(start_web["antonyms"], starting_word)
 
-	print(starting_word + " vs. " + antonym)
+	title = starting_word +  " vs. " + antonym
 	ant_web = get_word_web(antonym)
 	ant_lines = print_lines(ant_web)
 
 	total_lines = synthesize_antonym_components(start_lines, ant_lines)
 
 	score = evaluate_poem(total_lines)
-	print("score is " + str(score))
 
 	while score < 50:
 		start_lines = print_lines(start_web)
@@ -287,6 +289,8 @@ def make_poem(starting_word):
 		total_lines = synthesize_antonym_components(start_lines, ant_lines)
 		score = evaluate_poem(total_lines)
 
+	print("score is " + str(score))
+	total_lines.append(title)
 	return total_lines
 
 
@@ -296,10 +300,16 @@ def make_poem(starting_word):
 	and reads the poem aloud. 
 """
 def main():
-	poem = make_poem("dark")
 
+	word = sys.argv[1]
+	poem = make_poem(word)
+
+	title = poem[len(poem) - 1]
 	count = 0
+	print("			" + title + "\n")
 	for line in poem:
+		if line == title:
+			break
 		print(line)
 		count += 1
 		if count % 4 == 0:
