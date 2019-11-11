@@ -58,21 +58,24 @@ def get_word_web(start_word):
 
 			for l in syns:
 				arr = l.name().split(".")
-				results = associated_words[arr[1]]
-				results.append(l.lemmas()[0].name())
-				associated_words[arr[1]] = results
+				if len(arr[1]) == 1:
+					results = associated_words[arr[1]]
+					results.append(l.lemmas()[0].name())
+					associated_words[arr[1]] = results
 				if len(l.hypernyms()) > 0:
 					for hyp in l.hypernyms():
 						arr = hyp.name().split(".")
-						results = associated_words[arr[1]]
-						results.append(hyp.lemmas()[0].name())
-						associated_words[arr[1]] = results
+						if len(arr[1]) == 1:
+							results = associated_words[arr[1]]
+							results.append(hyp.lemmas()[0].name())
+							associated_words[arr[1]] = results
 				if len(l.hyponyms()) > 0:
 					for hyp in l.hyponyms():
 						arr = hyp.name().split(".")
-						results = associated_words[arr[1]]
-						results.append(hyp.lemmas()[0].name())
-						associated_words[arr[1]] = results
+						if len(arr[1]) == 1:
+							results = associated_words[arr[1]]
+							results.append(hyp.lemmas()[0].name())
+							associated_words[arr[1]] = results
 				for syn in l.lemmas():
 					if syn.antonyms():
 						antonyms.append(syn.antonyms()[0].name())
@@ -334,9 +337,10 @@ def main():
 		count += 1
 		if count % 4 == 0:
 			print()
+	print()
 
 	full_string = "'" + full_string + "'"
-	#os.system("say " + full_string)
+	os.system("say " + full_string)
 
 
 main()
